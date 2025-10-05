@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Comet Mastermind</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #189ad3;
+            --dark-blue: #0d7aad;
+            --dark-gray: #232323;
+            --medium-gray: #858585;
+            --light-gray: #f7f7f7;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light-gray);
+            color: var(--dark-gray);
+        }
+
+        /* Login Screen */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+        }
+
+        .login-box {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-box h1 {
+            color: var(--primary-blue);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .login-box input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .login-box button:hover {
+            background: var(--dark-blue);
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.show {
+            display: block;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: var(--primary-blue);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: var(--medium-gray);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .controls input {
+            flex: 1;
+            min-width: 250px;
+            padding: 0.8rem;
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .controls button {
+            padding: 0.8rem 1.5rem;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .controls button:hover {
+            background: var(--dark-blue);
+        }
+
+        .controls button.export-btn {
+            background: #28a745;
+        }
+
+        .controls button.export-btn:hover {
+            background: #218838;
+        }
+
+        .user-list {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .user-card {
+            border-bottom: 1px solid var(--light-gray);
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .user-card:hover {
+            background: var(--light-gray);
+        }
+
+        .user-card:last-child {
+            border-bottom: none;
+        }
+
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark-gray);
+        }
+
+        .user-email {
+            color: var(--medium-gray);
+            font-size: 0.9rem;
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .user-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-stat-label {
+            font-size: 0.8rem;
+            color: var(--medium-gray);
+        }
+
+        .user-stat-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+
+        .user-details {
+            display: none;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid var(--light-gray);
+        }
+
+        .user-details.show {
+            display: block;
+        }
+
+        .details-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .details-section h4 {
+            color: var(--dark-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .note-item, .prompt-item {
+            background: var(--light-gray);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .note-item strong, .prompt-item strong {
+            color: var(--dark-gray);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .note-content, .prompt-content {
+            white-space: pre-wrap;
+            color: var(--medium-gray);
+            font-size: 0.95rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--medium-gray);
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .user-stats {
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <h1>🔐 Admin Access</h1>
+            <div id="errorMessage" class="error-message"></div>
+            <form id="loginForm">
+                <input type="password" id="adminPassword" placeholder="Enter admin password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard">
+        <div class="header">
+            <div class="header-content">
+                <h1>📊 Admin Dashboard</h1>
+                <button class="logout-btn" onclick="adminLogout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Users</h3>
+                    <div class="value" id="totalUsers">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Active This Week</h3>
+                    <div class="value" id="activeUsers">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Notes</h3>
+                    <div class="value" id="totalNotes">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Custom Prompts</h3>
+                    <div class="value" id="totalPrompts">0</div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <input type="text" id="searchInput" placeholder="Search by name or email...">
+                <button onclick="filterUsers()">🔍 Search</button>
+                <button class="export-btn" onclick="exportAllData()">📥 Export All Data (CSV)</button>
+            </div>
+
+            <!-- User List -->
+            <div id="userList" class="user-list">
+                <div class="loading">Loading users...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://xripbgtxettewbsiyhkz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyaXBiZ3R4ZXR0ZXdic2l5aGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODY4MjcsImV4cCI6MjA3NTI2MjgyN30.8HjmETq6PeM1pEdcAnT7nFBEeIUyCDW_kZH5GAHgrWA';
+        const ADMIN_PASSWORD = 'EdmundBogenAdmin2025!';
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let allUsers = [];
+
+        // Check if admin is logged in
+        const isAdminLoggedIn = sessionStorage.getItem('adminLoggedIn') === 'true';
+        if (isAdminLoggedIn) {
+            showDashboard();
+        }
+
+        // Handle login
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const password = document.getElementById('adminPassword').value;
+
+            if (password === ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminLoggedIn', 'true');
+                showDashboard();
+            } else {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = 'Invalid password. Please try again.';
+                errorDiv.classList.add('show');
+            }
+        });
+
+        // Show dashboard
+        function showDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboard').classList.add('show');
+            loadDashboardData();
+        }
+
+        // Admin logout
+        function adminLogout() {
+            sessionStorage.removeItem('adminLoggedIn');
+            location.reload();
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Get all users
+                const { data: users, error: usersError } = await supabaseClient.auth.admin.listUsers();
+
+                if (usersError) {
+                    // Fallback: Get user data from our tables
+                    await loadUserDataFromTables();
+                    return;
+                }
+
+                allUsers = users.users || [];
+
+                // Get notes count
+                const { count: notesCount } = await supabaseClient
+                    .from('user_notes')
+                    .select('*', { count: 'exact', head: true });
+
+                // Get prompts count
+                const { count: promptsCount } = await supabaseClient
+                    .from('user_prompts')
+                    .select('*', { count: 'exact', head: true });
+
+                // Get active users (logged in within last 7 days)
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const activeCount = allUsers.filter(u =>
+                    new Date(u.last_sign_in_at) > weekAgo
+                ).length;
+
+                // Update stats
+                document.getElementById('totalUsers').textContent = allUsers.length;
+                document.getElementById('activeUsers').textContent = activeCount;
+                document.getElementById('totalNotes').textContent = notesCount || 0;
+                document.getElementById('totalPrompts').textContent = promptsCount || 0;
+
+                // Load user details
+                await loadUserDetails();
+                displayUsers(allUsers);
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('userList').innerHTML = '<div class="loading">Error loading data. Please refresh.</div>';
+            }
+        }
+
+        // Load user data from tables (fallback method)
+        async function loadUserDataFromTables() {
+            try {
+                // Get unique user IDs from notes
+                const { data: notes } = await supabaseClient
+                    .from('user_notes')
+                    .select('user_id');
+
+                const { data: prompts } = await supabaseClient
+                    .from('user_prompts')
+                    .select('user_id');
+
+                const { data: progress } = await supabaseClient
+                    .from('user_progress')
+                    .select('user_id, last_accessed');
+
+                // Combine and get unique user IDs
+                const userIds = new Set([
+                    ...notes?.map(n => n.user_id) || [],
+                    ...prompts?.map(p => p.user_id) || [],
+                    ...progress?.map(p => p.user_id) || []
+                ]);
+
+                allUsers = Array.from(userIds).map(id => ({ id }));
+
+                // Update basic stats
+                document.getElementById('totalUsers').textContent = allUsers.length;
+                document.getElementById('totalNotes').textContent = notes?.length || 0;
+                document.getElementById('totalPrompts').textContent = prompts?.length || 0;
+
+                // Calculate active users
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const activeCount = progress?.filter(p =>
+                    new Date(p.last_accessed) > weekAgo
+                ).length || 0;
+                document.getElementById('activeUsers').textContent = activeCount;
+
+                await loadUserDetails();
+                displayUsers(allUsers);
+
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        // Load detailed user data
+        async function loadUserDetails() {
+            for (let user of allUsers) {
+                // Get notes
+                const { data: notes } = await supabaseClient
+                    .from('user_notes')
+                    .select('*')
+                    .eq('user_id', user.id);
+
+                // Get prompts
+                const { data: prompts } = await supabaseClient
+                    .from('user_prompts')
+                    .select('*')
+                    .eq('user_id', user.id);
+
+                // Get progress
+                const { data: progress } = await supabaseClient
+                    .from('user_progress')
+                    .select('*')
+                    .eq('user_id', user.id);
+
+                user.notes = notes || [];
+                user.prompts = prompts || [];
+                user.progress = progress || [];
+                user.totalTime = progress?.reduce((sum, p) => sum + (p.time_spent || 0), 0) || 0;
+                user.completedSections = progress?.filter(p => p.completed).length || 0;
+            }
+        }
+
+        // Display users
+        function displayUsers(users) {
+            const userList = document.getElementById('userList');
+
+            if (users.length === 0) {
+                userList.innerHTML = '<div class="loading">No users found.</div>';
+                return;
+            }
+
+            userList.innerHTML = users.map(user => {
+                const email = user.email || 'Unknown';
+                const name = user.user_metadata?.full_name || email;
+                const lastLogin = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Never';
+                const timeSpentMin = Math.floor(user.totalTime / 60);
+
+                return `
+                    <div class="user-card" onclick="toggleUserDetails('${user.id}')">
+                        <div class="user-header">
+                            <div>
+                                <div class="user-name">${name}</div>
+                                <div class="user-email">${email}</div>
+                            </div>
+                        </div>
+                        <div class="user-stats">
+                            <div class="user-stat">
+                                <span class="user-stat-label">Notes</span>
+                                <span class="user-stat-value">${user.notes.length}</span>
+                            </div>
+                            <div class="user-stat">
+                                <span class="user-stat-label">Custom Prompts</span>
+                                <span class="user-stat-value">${user.prompts.length}</span>
+                            </div>
+                            <div class="user-stat">
+                                <span class="user-stat-label">Sections Viewed</span>
+                                <span class="user-stat-value">${user.progress.length}</span>
+                            </div>
+                            <div class="user-stat">
+                                <span class="user-stat-label">Time Spent</span>
+                                <span class="user-stat-value">${timeSpentMin}m</span>
+                            </div>
+                            <div class="user-stat">
+                                <span class="user-stat-label">Last Login</span>
+                                <span class="user-stat-value" style="font-size: 0.9rem;">${lastLogin}</span>
+                            </div>
+                        </div>
+                        <div id="details-${user.id}" class="user-details">
+                            ${generateUserDetails(user)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Generate user details HTML
+        function generateUserDetails(user) {
+            let html = '';
+
+            // Notes
+            if (user.notes.length > 0) {
+                html += `
+                    <div class="details-section">
+                        <h4>📝 User Notes (${user.notes.length})</h4>
+                        ${user.notes.map(note => `
+                            <div class="note-item">
+                                <strong>Section: ${note.section_id}</strong>
+                                <div class="note-content">${note.note_content || 'Empty'}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Custom Prompts
+            if (user.prompts.length > 0) {
+                html += `
+                    <div class="details-section">
+                        <h4>✏️ Custom Prompts (${user.prompts.length})</h4>
+                        ${user.prompts.map(prompt => `
+                            <div class="prompt-item">
+                                <strong>Prompt: ${prompt.prompt_id}</strong>
+                                <div class="prompt-content">${prompt.custom_prompt}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Progress
+            if (user.progress.length > 0) {
+                html += `
+                    <div class="details-section">
+                        <h4>📊 Section Progress (${user.progress.length} sections)</h4>
+                        ${user.progress.map(p => `
+                            <div class="note-item">
+                                <strong>${p.section_id}</strong>
+                                <div class="note-content">
+                                    Time spent: ${Math.floor(p.time_spent / 60)}m ${p.time_spent % 60}s<br>
+                                    Last accessed: ${new Date(p.last_accessed).toLocaleString()}<br>
+                                    Completed: ${p.completed ? '✓ Yes' : '✗ No'}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            return html || '<p>No activity yet.</p>';
+        }
+
+        // Toggle user details
+        function toggleUserDetails(userId) {
+            const details = document.getElementById(`details-${userId}`);
+            details.classList.toggle('show');
+        }
+
+        // Filter users
+        function filterUsers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allUsers.filter(user =>
+                (user.email?.toLowerCase().includes(searchTerm)) ||
+                (user.user_metadata?.full_name?.toLowerCase().includes(searchTerm))
+            );
+            displayUsers(filtered);
+        }
+
+        // Export all data to CSV
+        function exportAllData() {
+            let csv = 'User Email,User Name,Notes Count,Prompts Count,Sections Viewed,Time Spent (min),Last Login\n';
+
+            allUsers.forEach(user => {
+                const email = user.email || 'Unknown';
+                const name = user.user_metadata?.full_name || 'Unknown';
+                const notesCount = user.notes.length;
+                const promptsCount = user.prompts.length;
+                const sectionsViewed = user.progress.length;
+                const timeSpent = Math.floor(user.totalTime / 60);
+                const lastLogin = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Never';
+
+                csv += `"${email}","${name}",${notesCount},${promptsCount},${sectionsViewed},${timeSpent},"${lastLogin}"\n`;
+            });
+
+            // Add detailed notes
+            csv += '\n\nDETAILED USER NOTES\n';
+            csv += 'User Email,Section ID,Note Content,Updated At\n';
+            allUsers.forEach(user => {
+                user.notes.forEach(note => {
+                    csv += `"${user.email || 'Unknown'}","${note.section_id}","${(note.note_content || '').replace(/"/g, '""')}","${note.updated_at}"\n`;
+                });
+            });
+
+            // Add detailed prompts
+            csv += '\n\nDETAILED CUSTOM PROMPTS\n';
+            csv += 'User Email,Prompt ID,Custom Prompt,Updated At\n';
+            allUsers.forEach(user => {
+                user.prompts.forEach(prompt => {
+                    csv += `"${user.email || 'Unknown'}","${prompt.prompt_id}","${(prompt.custom_prompt || '').replace(/"/g, '""')}","${prompt.updated_at}"\n`;
+                });
+            });
+
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `comet-mastermind-data-${new Date().getTime()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

@@ -69,6 +69,130 @@
                 gap: 0.5rem;
             }
         }
+
+        /* Interactive Features Styles */
+        .editable-note {
+            min-height: 100px;
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .editable-note:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        .editable-prompt {
+            min-height: 80px;
+            width: 100%;
+            padding: 1rem;
+            border: 2px dashed #189ad3;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            background: #e3f2fd;
+            resize: vertical;
+            transition: all 0.3s;
+        }
+
+        .editable-prompt:focus {
+            outline: none;
+            border-style: solid;
+            box-shadow: 0 0 10px rgba(24, 154, 211, 0.3);
+        }
+
+        .save-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .save-indicator.saving {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .save-indicator.saved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .save-indicator.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .download-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 2rem;
+            background: #28a745;
+            color: white;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+        }
+
+        .progress-indicator {
+            background: var(--light-gray);
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-blue), var(--dark-blue));
+            transition: width 0.5s ease;
+        }
+
+        .section-complete-checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+
+        .section-complete-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
     <style>
         * {
             margin: 0;
@@ -466,7 +590,7 @@
     <!-- Navigation -->
     <div class="nav-container">
         <nav class="nav">
-            <div class="nav-brand">Comet Mastery Workbook</div>
+            <div class="nav-brand">Comet Mastery Workbook (Interactive)</div>
             <button class="menu-toggle" onclick="toggleMenu()">Menu ☰</button>
             <div class="user-info" id="userInfo"></div>
             <ul class="nav-menu" id="navMenu">
@@ -484,6 +608,15 @@
     </div>
 
     <div class="container">
+        <!-- Progress Indicator -->
+        <div class="progress-indicator">
+            <span>Your Progress:</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <span id="progressText">0%</span>
+        </div>
+
         <!-- Introduction -->
         <section id="introduction">
             <h1>COMET BROWSER MASTERY WORKBOOK</h1>
@@ -1786,6 +1919,9 @@
         <p>For Real Estate Professionals</p>
     </footer>
 
+    <!-- Download Workbook Button -->
+    <button class="download-btn" id="downloadBtn" onclick="downloadWorkbook()">📥 Download My Workbook</button>
+
     <!-- Scroll to Top Button -->
     <button class="scroll-top" id="scrollTop" onclick="scrollToTop()">↑</button>
 
@@ -1875,6 +2011,362 @@
 
         // Run auth check
         checkAuth();
+
+        // ============ INTERACTIVE FEATURES ============
+
+        let currentUser = null;
+        let saveTimeout = null;
+        let sectionTimers = {};
+
+        // Initialize interactive features after auth
+        async function initInteractiveFeatures() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) return;
+
+            currentUser = session.user;
+
+            // Convert all notes sections to editable textareas
+            convertNotesToEditable();
+
+            // Convert all prompt boxes to editable
+            convertPromptsToEditable();
+
+            // Load saved data
+            await loadUserData();
+
+            // Track section viewing
+            trackSectionViewing();
+
+            // Update progress
+            updateProgress();
+        }
+
+        // Convert notes sections to editable textareas
+        function convertNotesToEditable() {
+            const notesSections = document.querySelectorAll('.notes-section');
+            notesSections.forEach((section, index) => {
+                const sectionId = section.closest('section')?.id || `notes-${index}`;
+                const content = section.innerHTML;
+
+                // Extract the title
+                const titleMatch = content.match(/<h4>(.*?)<\/h4>/);
+                const title = titleMatch ? titleMatch[1] : 'YOUR NOTES';
+
+                // Create new editable structure
+                section.innerHTML = `
+                    <h4>${title}</h4>
+                    <textarea
+                        class="editable-note"
+                        data-section-id="${sectionId}"
+                        placeholder="Type your notes here... (auto-saves every 2 seconds)"
+                    ></textarea>
+                    <div class="save-indicator" id="save-${sectionId}" style="display: none;"></div>
+                `;
+
+                // Add auto-save listener
+                const textarea = section.querySelector('.editable-note');
+                textarea.addEventListener('input', () => autoSaveNote(sectionId, textarea));
+            });
+        }
+
+        // Convert prompt boxes to editable
+        function convertPromptsToEditable() {
+            const promptBoxes = document.querySelectorAll('.prompt-box');
+            promptBoxes.forEach((box, index) => {
+                const promptId = `prompt-${box.closest('section')?.id || 'unknown'}-${index}`;
+                const originalContent = box.textContent.trim();
+
+                box.innerHTML = `
+                    <textarea
+                        class="editable-prompt"
+                        data-prompt-id="${promptId}"
+                        placeholder="Edit this prompt to customize it for your use..."
+                    >${originalContent}</textarea>
+                    <div class="save-indicator" id="save-${promptId}" style="display: none;"></div>
+                `;
+
+                // Add auto-save listener
+                const textarea = box.querySelector('.editable-prompt');
+                textarea.addEventListener('input', () => autoSavePrompt(promptId, textarea));
+            });
+        }
+
+        // Auto-save note with debounce
+        function autoSaveNote(sectionId, textarea) {
+            clearTimeout(saveTimeout);
+            showSaveIndicator(sectionId, 'saving', 'Saving...');
+
+            saveTimeout = setTimeout(async () => {
+                try {
+                    const { error } = await supabaseClient
+                        .from('user_notes')
+                        .upsert({
+                            user_id: currentUser.id,
+                            section_id: sectionId,
+                            note_content: textarea.value,
+                            updated_at: new Date().toISOString()
+                        }, {
+                            onConflict: 'user_id,section_id'
+                        });
+
+                    if (error) throw error;
+
+                    showSaveIndicator(sectionId, 'saved', 'Saved ✓');
+                    setTimeout(() => hideSaveIndicator(sectionId), 2000);
+                } catch (error) {
+                    console.error('Error saving note:', error);
+                    showSaveIndicator(sectionId, 'error', 'Error saving');
+                }
+            }, 2000);
+        }
+
+        // Auto-save prompt with debounce
+        function autoSavePrompt(promptId, textarea) {
+            clearTimeout(saveTimeout);
+            showSaveIndicator(promptId, 'saving', 'Saving...');
+
+            saveTimeout = setTimeout(async () => {
+                try {
+                    const { error } = await supabaseClient
+                        .from('user_prompts')
+                        .upsert({
+                            user_id: currentUser.id,
+                            prompt_id: promptId,
+                            custom_prompt: textarea.value,
+                            updated_at: new Date().toISOString()
+                        }, {
+                            onConflict: 'user_id,prompt_id'
+                        });
+
+                    if (error) throw error;
+
+                    showSaveIndicator(promptId, 'saved', 'Saved ✓');
+                    setTimeout(() => hideSaveIndicator(promptId), 2000);
+                } catch (error) {
+                    console.error('Error saving prompt:', error);
+                    showSaveIndicator(promptId, 'error', 'Error saving');
+                }
+            }, 2000);
+        }
+
+        // Save indicator helpers
+        function showSaveIndicator(id, type, message) {
+            const indicator = document.getElementById(`save-${id}`);
+            if (indicator) {
+                indicator.textContent = message;
+                indicator.className = `save-indicator ${type}`;
+                indicator.style.display = 'inline-flex';
+            }
+        }
+
+        function hideSaveIndicator(id) {
+            const indicator = document.getElementById(`save-${id}`);
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Load saved user data
+        async function loadUserData() {
+            try {
+                // Load notes
+                const { data: notes } = await supabaseClient
+                    .from('user_notes')
+                    .select('*')
+                    .eq('user_id', currentUser.id);
+
+                notes?.forEach(note => {
+                    const textarea = document.querySelector(`[data-section-id="${note.section_id}"]`);
+                    if (textarea && note.note_content) {
+                        textarea.value = note.note_content;
+                    }
+                });
+
+                // Load prompts
+                const { data: prompts } = await supabaseClient
+                    .from('user_prompts')
+                    .select('*')
+                    .eq('user_id', currentUser.id);
+
+                prompts?.forEach(prompt => {
+                    const textarea = document.querySelector(`[data-prompt-id="${prompt.prompt_id}"]`);
+                    if (textarea && prompt.custom_prompt) {
+                        textarea.value = prompt.custom_prompt;
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        // Track section viewing and time spent
+        function trackSectionViewing() {
+            const sections = document.querySelectorAll('section[id]');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const sectionId = entry.target.id;
+
+                    if (entry.isIntersecting) {
+                        // Section is visible - start timer
+                        if (!sectionTimers[sectionId]) {
+                            sectionTimers[sectionId] = {
+                                startTime: Date.now(),
+                                totalTime: 0
+                            };
+                        } else {
+                            sectionTimers[sectionId].startTime = Date.now();
+                        }
+
+                        // Mark section as accessed
+                        updateSectionProgress(sectionId, false);
+                    } else {
+                        // Section is not visible - stop timer
+                        if (sectionTimers[sectionId]?.startTime) {
+                            const elapsed = Math.floor((Date.now() - sectionTimers[sectionId].startTime) / 1000);
+                            sectionTimers[sectionId].totalTime += elapsed;
+                            sectionTimers[sectionId].startTime = null;
+
+                            // Update time spent in database
+                            updateSectionProgress(sectionId, false, sectionTimers[sectionId].totalTime);
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            sections.forEach(section => observer.observe(section));
+        }
+
+        // Update section progress in database
+        async function updateSectionProgress(sectionId, completed = false, timeSpent = 0) {
+            try {
+                // Get existing progress
+                const { data: existing } = await supabaseClient
+                    .from('user_progress')
+                    .select('time_spent')
+                    .eq('user_id', currentUser.id)
+                    .eq('section_id', sectionId)
+                    .single();
+
+                const totalTime = existing ? existing.time_spent + timeSpent : timeSpent;
+
+                await supabaseClient
+                    .from('user_progress')
+                    .upsert({
+                        user_id: currentUser.id,
+                        section_id: sectionId,
+                        completed: completed,
+                        time_spent: totalTime,
+                        last_accessed: new Date().toISOString()
+                    }, {
+                        onConflict: 'user_id,section_id'
+                    });
+
+                updateProgress();
+            } catch (error) {
+                console.error('Error updating progress:', error);
+            }
+        }
+
+        // Update progress bar
+        async function updateProgress() {
+            try {
+                const sections = document.querySelectorAll('section[id]');
+                const totalSections = sections.length;
+
+                const { data: progress } = await supabaseClient
+                    .from('user_progress')
+                    .select('section_id')
+                    .eq('user_id', currentUser.id);
+
+                const viewedSections = progress?.length || 0;
+                const percentage = Math.round((viewedSections / totalSections) * 100);
+
+                document.getElementById('progressFill').style.width = `${percentage}%`;
+                document.getElementById('progressText').textContent = `${percentage}%`;
+            } catch (error) {
+                console.error('Error updating progress:', error);
+            }
+        }
+
+        // Download workbook as HTML
+        async function downloadWorkbook() {
+            try {
+                // Get user data
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                const userName = session.user.user_metadata?.full_name || session.user.email;
+                const date = new Date().toLocaleDateString();
+
+                // Clone the content
+                const clone = document.getElementById('content').cloneNode(true);
+
+                // Remove buttons and interactive elements
+                clone.querySelectorAll('.download-btn, .scroll-top, .logout-btn, .progress-indicator').forEach(el => el.remove());
+
+                // Convert textareas to static text
+                clone.querySelectorAll('.editable-note, .editable-prompt').forEach(textarea => {
+                    const p = document.createElement('p');
+                    p.textContent = textarea.value || 'No notes added yet.';
+                    p.style.whiteSpace = 'pre-wrap';
+                    textarea.replaceWith(p);
+                });
+
+                // Remove save indicators
+                clone.querySelectorAll('.save-indicator').forEach(el => el.remove());
+
+                // Create HTML document
+                const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Comet Mastery Workbook - ${userName}</title>
+    <style>
+        ${document.querySelector('style').textContent}
+        body { padding: 2rem; }
+        .download-header {
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #189ad3 0%, #0d7aad 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="download-header">
+        <h1>My Comet Mastery Workbook</h1>
+        <p><strong>${userName}</strong></p>
+        <p>Downloaded on: ${date}</p>
+    </div>
+    ${clone.innerHTML}
+</body>
+</html>`;
+
+                // Create download
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Comet-Workbook-${userName.replace(/\s+/g, '-')}-${new Date().getTime()}.html`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                alert('Your workbook has been downloaded! You can open it in any browser or convert to PDF using your browser\'s print function.');
+            } catch (error) {
+                console.error('Error downloading workbook:', error);
+                alert('Error downloading workbook. Please try again.');
+            }
+        }
+
+        // Initialize after auth check completes
+        setTimeout(() => {
+            if (currentUser) {
+                initInteractiveFeatures();
+            }
+        }, 1000);
     </script>
     </div>
 </body>
