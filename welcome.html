@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - Comet Mastermind</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #189ad3;
+            --dark-blue: #0d7aad;
+            --dark-gray: #232323;
+            --medium-gray: #858585;
+            --light-gray: #f7f7f7;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .welcome-container {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .hero-logo {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: var(--primary-blue);
+            font-size: clamp(2rem, 5vw, 2.8rem);
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            color: var(--medium-gray);
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+
+        .access-section {
+            background: var(--light-gray);
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .access-section h2 {
+            color: var(--dark-gray);
+            font-size: clamp(1.3rem, 4vw, 1.6rem);
+            margin-bottom: 1rem;
+        }
+
+        .access-section p {
+            color: var(--medium-gray);
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            max-width: 400px;
+            padding: 1.2rem 2rem;
+            margin: 0.5rem 0;
+            background: var(--primary-blue);
+            color: var(--white);
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn:hover {
+            background: var(--dark-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(24, 154, 211, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--primary-blue);
+            border: 2px solid var(--primary-blue);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-blue);
+            color: var(--white);
+        }
+
+        .divider {
+            margin: 2rem 0;
+            color: var(--medium-gray);
+            font-size: 0.9rem;
+        }
+
+        .feature-list {
+            text-align: left;
+            margin: 1.5rem 0;
+        }
+
+        .feature-list li {
+            color: var(--dark-gray);
+            padding: 0.5rem 0;
+            font-size: 1rem;
+            list-style: none;
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--primary-blue);
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        @media (max-width: 480px) {
+            .welcome-container {
+                padding: 2rem 1.5rem;
+            }
+
+            .access-section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <img src="mastermind-hero.png" alt="AI Mastermind" class="hero-logo">
+
+        <h1>Welcome to the AI Mastermind!</h1>
+        <p class="subtitle">Your complete guide to mastering Comet Browser for real estate success</p>
+
+        <div class="access-section">
+            <h2>🎯 First Time Here?</h2>
+            <p>Get instant access! Just enter your email and create a password.</p>
+            <a href="register.html" class="btn">Get Started - It's Free!</a>
+        </div>
+
+        <div class="divider">— OR —</div>
+
+        <div class="access-section">
+            <h2>🔐 Already Registered?</h2>
+            <p>Welcome back! Login to continue your training.</p>
+            <a href="login.html" class="btn btn-secondary">Login Here</a>
+        </div>
+
+        <div class="feature-list">
+            <p style="text-align: center; font-weight: 600; color: var(--dark-gray); margin-bottom: 1rem;">What You'll Get:</p>
+            <ul>
+                <li>Complete Comet Browser installation guide</li>
+                <li>5 powerful use cases with step-by-step instructions</li>
+                <li>Copy-paste prompts for instant results</li>
+                <li>Real-world real estate scenarios</li>
+                <li>Security best practices</li>
+                <li>Bonus tips & keyboard shortcuts</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://xripbgtxettewbsiyhkz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyaXBiZ3R4ZXR0ZXdic2l5aGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODY4MjcsImV4cCI6MjA3NTI2MjgyN30.8HjmETq6PeM1pEdcAnT7nFBEeIUyCDW_kZH5GAHgrWA';
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Check if user is already logged in
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                // Already logged in, redirect to workbook
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>

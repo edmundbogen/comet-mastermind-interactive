@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comet Browser Mastery Workbook - Edmund Bogen</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Loading screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #189ad3 0%, #0d7aad 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        #loading-screen .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #content {
+            display: none;
+        }
+
+        #content.show {
+            display: block;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: white;
+        }
+
+        .logout-btn {
+            background: #189ad3;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn:hover {
+            background: #0d7aad;
+        }
+
+        @media (max-width: 768px) {
+            .user-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #189ad3;
+            --dark-blue: #0d7aad;
+            --dark-gray: #232323;
+            --medium-gray: #858585;
+            --light-gray: #f7f7f7;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-gray);
+            background: var(--white);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+            color: var(--white);
+            padding: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Navigation */
+        .nav-container {
+            background: var(--dark-gray);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-brand {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-menu a {
+            color: var(--white);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .nav-menu a:hover {
+            background: var(--primary-blue);
+        }
+
+        /* Mobile menu toggle */
+        .menu-toggle {
+            display: none;
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Sections */
+        section {
+            margin-bottom: 4rem;
+            scroll-margin-top: 80px;
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--dark-gray);
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-size: clamp(1.5rem, 4vw, 2.2rem);
+            color: var(--primary-blue);
+            border-bottom: 3px solid var(--primary-blue);
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        h3 {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: var(--dark-blue);
+            margin-top: 1.5rem;
+        }
+
+        h4 {
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            color: var(--medium-gray);
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--dark-gray);
+        }
+
+        strong {
+            color: var(--dark-gray);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--light-gray);
+            padding: 2rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+            border-left: 5px solid var(--primary-blue);
+        }
+
+        .warning-card {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .success-card {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: var(--light-gray);
+            padding: 2rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+        }
+
+        .toc ul {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .toc li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .toc a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        /* Prompts and Examples */
+        .prompt-box {
+            background: #e3f2fd;
+            border-left: 4px solid var(--primary-blue);
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+        }
+
+        .example-box {
+            background: #f1f8e9;
+            border-left: 4px solid #8bc34a;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+        }
+
+        /* Notes Section */
+        .notes-section {
+            background: #fff9c4;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+            border: 2px dashed #fbc02d;
+        }
+
+        .notes-section h4 {
+            color: #f57f17;
+            margin-bottom: 1rem;
+        }
+
+        /* Steps */
+        .step {
+            margin: 1.5rem 0;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .step::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--primary-blue);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark-gray);
+            color: var(--white);
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .menu-toggle {
+                display: block;
+                align-self: flex-end;
+            }
+
+            .nav-menu {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                margin-top: 1rem;
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .nav-menu a {
+                width: 100%;
+                text-align: left;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            ul, ol {
+                margin-left: 1rem;
+            }
+        }
+
+        /* Scroll to top button */
+        .scroll-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--primary-blue);
+            color: var(--white);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+
+        .scroll-top:hover {
+            background: var(--dark-blue);
+            transform: translateY(-5px);
+        }
+
+        .scroll-top.visible {
+            display: flex;
+        }
+
+        /* Signature section */
+        .signature-box {
+            background: var(--white);
+            border: 2px solid var(--dark-gray);
+            padding: 2rem;
+            margin: 2rem 0;
+            border-radius: 10px;
+        }
+
+        .signature-line {
+            border-bottom: 2px solid var(--dark-gray);
+            margin: 1rem 0;
+            min-height: 50px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        /* Checklist */
+        .checklist {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .checklist li {
+            padding-left: 2rem;
+            position: relative;
+            margin-bottom: 0.8rem;
+        }
+
+        .checklist li::before {
+            content: '☐';
+            position: absolute;
+            left: 0;
+            font-size: 1.2rem;
+            color: var(--primary-blue);
+        }
+
+        /* Do/Don't lists */
+        .do-list li::before {
+            content: '✅';
+            margin-right: 0.5rem;
+        }
+
+        .dont-list li::before {
+            content: '❌';
+            margin-right: 0.5rem;
+        }
+
+        .do-list, .dont-list {
+            list-style: none;
+            margin-left: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="content">
+    <!-- Hero Section -->
+    <div class="hero">
+        <img src="mastermind-hero.png" alt="Welcome to the Beginning of Truly Agentic AI - Mastermind hosted by Edmund Bogen" class="hero-image">
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-container">
+        <nav class="nav">
+            <div class="nav-brand">Comet Mastery Workbook</div>
+            <button class="menu-toggle" onclick="toggleMenu()">Menu ☰</button>
+            <div class="user-info" id="userInfo"></div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#introduction">Introduction</a></li>
+                <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#use-case-1">Real-Time Analysis</a></li>
+                <li><a href="#use-case-2">Lead Follow-Up</a></li>
+                <li><a href="#use-case-3">Expired/FSBO</a></li>
+                <li><a href="#use-case-4">Listing Analysis</a></li>
+                <li><a href="#use-case-5">Objection Handling</a></li>
+                <li><a href="#bonus">Bonus Tips</a></li>
+                <li><a href="#security">Security</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="container">
+        <!-- Introduction -->
+        <section id="introduction">
+            <h1>COMET BROWSER MASTERY WORKBOOK</h1>
+            <h3>For Real Estate Professionals</h3>
+            <p><strong>Your AI-Powered Second Brain for Closing More Deals</strong></p>
+
+            <div class="card">
+                <h2>A MESSAGE FROM EDMUND BOGEN</h2>
+                <h3>Welcome to the beginning of truly agentic AI.</h3>
+
+                <p>Let me explain what that means in plain English, because this is important: Until now, AI has been reactive. You ask ChatGPT a question, it gives you an answer. You're still doing all the work—the clicking, the copying, the pasting, the organizing, the executing.</p>
+
+                <p><strong>Agentic AI is different. It doesn't just answer—it acts.</strong></p>
+
+                <p>Think of it like this: Reactive AI is like having a really smart intern who can answer any question you ask. Agentic AI is like having a personal assistant who not only answers your questions but also handles your calendar, drafts your emails, researches your competition, organizes your files, and completes multi-step tasks without you having to micromanage every single action.</p>
+
+                <p><strong>For real estate professionals and entrepreneurs, here's what this actually means:</strong></p>
+
+                <p>Instead of spending 20 minutes researching comps, copying data into a spreadsheet, and writing a CMA—you tell your AI what you need, and it handles the entire workflow. Instead of drafting five different follow-up emails manually, the AI writes them, personalizes them, and even helps you track responses. Instead of reviewing a contract line by line alone, you have an AI partner that flags issues, explains clauses, and suggests negotiation strategies in real-time.</p>
+
+                <p><strong>This isn't science fiction. This is happening right now, today.</strong></p>
+            </div>
+
+            <div class="card warning-card">
+                <h3>THIS REQUIRES PRACTICE (JUST LIKE ANYTHING ELSE)</h3>
+
+                <p>Here's what I need you to understand: Like any other skill in business or life—prospecting, negotiating, giving presentations, using your CRM—<strong>agentic AI requires practice and training.</strong></p>
+
+                <p>You wouldn't expect to become a master negotiator after one seminar. You wouldn't expect to dominate social media marketing after watching one YouTube video. The same is true here.</p>
+
+                <p><strong>The difference is the payoff.</strong></p>
+
+                <p>When you invest time in mastering these tools—and I'm talking about consistent, focused practice over weeks and months—you can increase your productivity by <strong>an order of magnitude.</strong></p>
+
+                <p>Let me be crystal clear about what "order of magnitude" means: That's not 10% better. That's not even 2x better. <strong>An order of magnitude means 10x—ten times more productive.</strong></p>
+
+                <p>Think about that for a second:</p>
+                <ul>
+                    <li>If you currently close 12 transactions per year, this could mean 120.</li>
+                    <li>If you spend 10 hours per week on administrative work, this could mean 1 hour.</li>
+                    <li>If you follow up with 5 leads per day, this could mean 50.</li>
+                </ul>
+
+                <p><strong>This is not a fluffy, motivational statement. This is real.</strong></p>
+
+                <p>I've seen agents cut their CMA prep time from 45 minutes to 4 minutes. I've watched salespeople go from 3 personalized outreach messages per day to 30. I've witnessed entrepreneurs automate entire workflows that used to consume half their week.</p>
+
+                <p>The technology exists. The tools are available. The only question is: <strong>Will you be one of the people who learns to use them?</strong></p>
+            </div>
+
+            <div class="card">
+                <h3>YOUR COMPETITION IS ALREADY DOING THIS</h3>
+
+                <p>This is not some far-off event we're preparing for. This is not "the future of real estate." <strong>This is today.</strong></p>
+
+                <p>Right now, while you're reading this, there are agents in your market who are:</p>
+                <ul>
+                    <li>Responding to leads in 90 seconds instead of 90 minutes</li>
+                    <li>Creating listing presentations in 10 minutes that used to take 2 hours</li>
+                    <li>Following up with 10x more prospects than they could before</li>
+                    <li>Analyzing market data at a speed and depth that was impossible last year</li>
+                </ul>
+
+                <p>They're not smarter than you. They're not working harder than you. <strong>They're using tools like Comet to work at a completely different level.</strong></p>
+
+                <p>And here's the thing: Six months from now, this won't be a competitive advantage anymore—it will be table stakes. The question isn't whether AI will transform how real estate is sold. The question is whether you'll be leading that transformation or scrambling to catch up.</p>
+            </div>
+
+            <div class="card success-card">
+                <h3>WHAT THIS WORKBOOK WILL DO FOR YOU</h3>
+
+                <p>Over the next sections, I'm going to show you exactly how to harness these tools. Not theory. Not hype. <strong>Actual workflows you can implement today.</strong></p>
+
+                <p>You'll learn five specific, high-impact strategies that will:</p>
+                <ol>
+                    <li>Give you a live AI coach reviewing your work in real-time</li>
+                    <li>Automate your lead follow-up so nothing falls through the cracks</li>
+                    <li>Convert expired listings and FSBOs with data-driven, personalized outreach</li>
+                    <li>Win more listing presentations with competitive intelligence</li>
+                    <li>Save dying deals with instant, expert-level objection handling</li>
+                </ol>
+
+                <p>Each strategy includes:</p>
+                <ul>
+                    <li>Step-by-step instructions (no tech background needed)</li>
+                    <li>Copy-and-paste prompts you can use immediately</li>
+                    <li>Real-world scenarios from actual real estate situations</li>
+                    <li>Space for you to customize and practice</li>
+                </ul>
+
+                <p><strong>But here's what I need from you:</strong></p>
+
+                <p>Don't just read this workbook. <strong>Practice it.</strong> Try one use case this week. Really use it. Refine it. Make it your own. Then add another next week. Within 30 days, these tools will feel natural. Within 90 days, you'll wonder how you ever worked without them.</p>
+
+                <p>The agents and entrepreneurs who commit to this—who treat AI mastery like they would any other critical business skill—will dominate their markets for the next decade.</p>
+
+                <p><strong>The choice is yours. Let's get started.</strong></p>
+
+                <p>— Edmund Bogen<br>
+                Luxury Real Estate Advisor, Coach & Speaker<br>
+                South Florida</p>
+            </div>
+
+            <div class="warning-card card">
+                <h4>IMPORTANT NOTICE</h4>
+                <p>This workbook contains powerful strategies for leveraging AI in your real estate business. Before implementing these techniques with client data, please read the <strong><a href="#security">Security Disclaimer</a></strong> at the end of this workbook. Your clients' trust and data security must always come first.</p>
+            </div>
+
+            <!-- Table of Contents -->
+            <div class="toc">
+                <h2>TABLE OF CONTENTS</h2>
+                <ul>
+                    <li><a href="#getting-started"><strong>Getting Started with Comet</strong> - Installation & Setup</a></li>
+                    <li><a href="#use-case-1"><strong>Use Case #1:</strong> Real-Time Page Analysis - Your Live Coaching Assistant</a></li>
+                    <li><a href="#use-case-2"><strong>Use Case #2:</strong> Lead Follow-Up Automation - Converting Leads into Clients</a></li>
+                    <li><a href="#use-case-3"><strong>Use Case #3:</strong> Expired/FSBO Conversion - Mining Gold from Failed Listings</a></li>
+                    <li><a href="#use-case-4"><strong>Use Case #4:</strong> Competitive Listing Analysis - Winning More Listing Presentations</a></li>
+                    <li><a href="#use-case-5"><strong>Use Case #5:</strong> Objection Response Library - Saving Dying Deals</a></li>
+                    <li><a href="#bonus"><strong>Bonus Tips & Best Practices</strong></a></li>
+                    <li><a href="#security"><strong>Security Disclaimer & Best Practices</strong></a></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Getting Started -->
+        <section id="getting-started">
+            <h2>GETTING STARTED WITH COMET</h2>
+
+            <h3>INSTALLATION & SETUP (15 Minutes)</h3>
+
+            <h4>Step 1: Download Comet Browser</h4>
+            <div class="step">
+                <p>Go to <strong>www.perplexity.ai/comet</strong> in your current browser</p>
+            </div>
+            <div class="step">
+                <p>Click <strong>"Download for Windows"</strong> or <strong>"Download for Mac"</strong></p>
+            </div>
+            <div class="step">
+                <p>Wait for the installer to download (approximately 150MB)</p>
+            </div>
+            <div class="step">
+                <p>Locate the file in your Downloads folder</p>
+            </div>
+
+            <h4>Step 2: Install Comet</h4>
+            <div class="card">
+                <p><strong>For Windows:</strong></p>
+                <ul>
+                    <li>Double-click the downloaded .exe file</li>
+                    <li>Click "Yes" when Windows asks for permission</li>
+                    <li>Follow the installation wizard (click "Next" → "Install" → "Finish")</li>
+                </ul>
+
+                <p><strong>For Mac:</strong></p>
+                <ul>
+                    <li>Double-click the downloaded .dmg file</li>
+                    <li>Drag the Comet icon into your Applications folder</li>
+                    <li>Right-click Comet in Applications and select "Open" (first time only)</li>
+                    <li>Click "Open" when macOS asks for confirmation</li>
+                </ul>
+            </div>
+
+            <h4>Step 3: Initial Setup</h4>
+            <div class="step">
+                <p>Launch Comet from your desktop or Applications folder</p>
+            </div>
+            <div class="step">
+                <p><strong>Sign in or create a Perplexity account</strong> (free)</p>
+                <ul>
+                    <li>Use your business email for professional use</li>
+                    <li>Verify your email address</li>
+                </ul>
+            </div>
+            <div class="step">
+                <p><strong>Import your bookmarks</strong> (optional but recommended)</p>
+                <ul>
+                    <li>Click "Import" when prompted</li>
+                    <li>Select your previous browser (Chrome, Safari, Edge, Firefox)</li>
+                    <li>Choose what to import (bookmarks, passwords, history)</li>
+                </ul>
+            </div>
+
+            <h4>Step 4: Customize Your Workspace</h4>
+            <div class="step">
+                <p><strong>Pin the AI Sidebar:</strong> Click the Perplexity icon on the right side to keep it visible</p>
+            </div>
+            <div class="step">
+                <p><strong>Set Comet as your default browser</strong> (recommended for full benefits)</p>
+                <ul><li>Settings → Make Default Browser</li></ul>
+            </div>
+            <div class="step">
+                <p><strong>Install your essential Chrome extensions</strong></p>
+                <ul>
+                    <li>Click the puzzle icon → Visit Chrome Web Store</li>
+                    <li>Install your MLS access tools, CRM extensions, etc.</li>
+                </ul>
+            </div>
+
+            <h3>UNDERSTANDING THE INTERFACE</h3>
+            <div class="card">
+                <p><strong>Main Components:</strong></p>
+                <ul>
+                    <li><strong>Address Bar:</strong> Standard web browsing (top)</li>
+                    <li><strong>AI Sidebar:</strong> Your assistant (right side) - This is where the magic happens</li>
+                    <li><strong>Workspaces:</strong> Organize tabs by project (top left)</li>
+                    <li><strong>Extensions:</strong> Same as Chrome (top right)</li>
+                </ul>
+
+                <p><strong>The AI Sidebar (Your New Best Friend):</strong></p>
+                <ul>
+                    <li>Always available with one click</li>
+                    <li>Sees the page you're currently viewing</li>
+                    <li>Can execute commands, research, and generate content</li>
+                    <li>Maintains conversation context</li>
+                </ul>
+            </div>
+
+            <div class="notes-section">
+                <h4>YOUR NOTES - Getting Started:</h4>
+                <p><em>What worked well during installation?</em></p>
+                <p>&nbsp;</p>
+                <p><em>What extensions did you install?</em></p>
+                <p>&nbsp;</p>
+                <p><em>Questions or issues to address:</em></p>
+                <p>&nbsp;</p>
+            </div>
+        </section>
+
+        <!-- Use Case 1 -->
+        <section id="use-case-1">
+            <h2>USE CASE #1: REAL-TIME PAGE ANALYSIS</h2>
+            <h3>Your Live Coaching Assistant</h3>
+
+            <div class="card">
+                <h4>WHY THIS MATTERS</h4>
+                <p>The AI sidebar can analyze ANY page you're viewing and provide instant feedback, catch mistakes, suggest improvements, and coach you in real-time. This turns every moment into a learning and quality-control opportunity.</p>
+            </div>
+
+            <h3>SCENARIO 1: Reviewing MLS Listings Before Showing</h3>
+
+            <p><strong>Step-by-Step:</strong></p>
+            <div class="step">Navigate to your MLS and open a listing you're considering for a client</div>
+            <div class="step">Click the <strong>Perplexity sidebar</strong> (or press Ctrl+Shift+P / Cmd+Shift+P)</div>
+            <div class="step">Type or say: <strong>"Analyze this listing for red flags and opportunities"</strong></div>
+            <div class="step">Review the AI's response for:
+                <ul>
+                    <li>Pricing concerns</li>
+                    <li>Description issues</li>
+                    <li>Photo quality problems</li>
+                    <li>Days on market insights</li>
+                    <li>Neighborhood trends</li>
+                </ul>
+            </div>
+
+            <div class="prompt-box">
+                <strong>Advanced Prompts to Try:</strong><br>
+                • "What questions should I ask the listing agent based on this information?"<br>
+                • "Compare this listing's description to best practices for luxury properties"<br>
+                • "What's missing from this listing that buyers in this price range expect?"<br>
+                • "Summarize the key selling points I should emphasize to my buyer"
+            </div>
+
+            <p><strong>Time Saved:</strong> 10-15 minutes per listing review</p>
+
+            <h3>SCENARIO 2: Quality-Checking Your Own Listings</h3>
+
+            <p><strong>Before You Hit "Publish":</strong></p>
+            <div class="step">Open your draft listing in the MLS or listing platform</div>
+            <div class="step">Activate Comet's sidebar</div>
+            <div class="step">Ask: <strong>"Review this listing description and suggest improvements for [target buyer type]"</strong></div>
+
+            <div class="prompt-box">
+                <strong>Specific Prompts:</strong><br>
+                • "Does this description appeal to first-time buyers? What would make it stronger?"<br>
+                • "Rewrite this to emphasize investment potential"<br>
+                • "What emotional triggers am I missing for luxury buyers?"<br>
+                • "Is this description ADA-compliant and Fair Housing compliant?"
+            </div>
+
+            <div class="example-box">
+                <strong>Pro Tip:</strong> Copy the improved version, paste it into your listing platform, then ask Comet to "check this revised version for any remaining issues."
+            </div>
+
+            <h3>SCENARIO 3: Contract Review Assistant</h3>
+
+            <p><strong>When Reviewing Purchase Agreements:</strong></p>
+            <div class="step">Open the contract PDF or web form</div>
+            <div class="step">Ask Comet: <strong>"Summarize the key contingencies and deadlines in this contract"</strong></div>
+            <div class="step">Follow up: <strong>"What are the risks to my client in this agreement?"</strong></div>
+            <div class="step">Use it to prep for client calls: <strong>"What should I explain to my buyer/seller about this contract?"</strong></div>
+
+            <div class="prompt-box">
+                <strong>Critical Prompts:</strong><br>
+                • "Flag any unusual clauses or terms"<br>
+                • "What questions should I ask the other agent about this offer?"<br>
+                • "Translate this legal language into plain English for my client"
+            </div>
+
+            <h3>SCENARIO 4: Learning from Competitor Websites</h3>
+
+            <p><strong>Competitive Intelligence:</strong></p>
+            <div class="step">Visit a top-producing agent's website in your market</div>
+            <div class="step">Ask: <strong>"Analyze this agent's value proposition and marketing approach"</strong></div>
+            <div class="step">Follow-up: <strong>"What are they doing well that I should consider?"</strong></div>
+            <div class="step">Strategic question: <strong>"How can I differentiate myself from this approach?"</strong></div>
+
+            <h3>SCENARIO 5: Email Quality Control</h3>
+
+            <p><strong>Before Sending Important Emails:</strong></p>
+            <div class="step">Draft your email in Gmail, Outlook, or your email platform</div>
+            <div class="step">With the email visible, ask Comet: <strong>"Review this email for tone, clarity, and professionalism"</strong></div>
+            <div class="step">Refine based on feedback</div>
+            <div class="step">Ask: <strong>"Predict potential questions or concerns this email might raise"</strong></div>
+
+            <div class="prompt-box">
+                <strong>Useful Prompts:</strong><br>
+                • "Make this email more persuasive without being pushy"<br>
+                • "Is this email appropriate for a luxury client?"<br>
+                • "Simplify this explanation for a first-time buyer"<br>
+                • "Add a stronger call-to-action"
+            </div>
+
+            <h3>SCENARIO 6: Social Media Post Review</h3>
+
+            <p><strong>Before Publishing:</strong></p>
+            <div class="step">Open your social media scheduler or platform (Buffer, Hootsuite, Meta Business Suite)</div>
+            <div class="step">With your draft post visible, ask: <strong>"Rate this post for engagement potential and suggest improvements"</strong></div>
+            <div class="step">Get variations: <strong>"Give me 3 alternative versions of this post"</strong></div>
+
+            <h3>DAILY PRACTICE ROUTINE</h3>
+
+            <div class="card">
+                <p><strong>Morning Ritual (5 minutes):</strong></p>
+                <ul>
+                    <li>Open today's featured MLS listings</li>
+                    <li>Ask Comet to summarize market changes overnight</li>
+                    <li>Review your calendar and ask: "What should I prepare for today's appointments?"</li>
+                </ul>
+
+                <p><strong>Throughout the Day:</strong></p>
+                <ul>
+                    <li>Every time you're about to send something important → Ask Comet to review it</li>
+                    <li>Before every showing → Ask Comet to analyze the listing</li>
+                    <li>After every appointment → Ask Comet to generate follow-up tasks</li>
+                </ul>
+
+                <p><strong>Evening Review (5 minutes):</strong></p>
+                <ul>
+                    <li>Open your CRM or task list</li>
+                    <li>Ask: "Prioritize tomorrow's follow-ups based on likelihood to close"</li>
+                </ul>
+            </div>
+
+            <h3>TROUBLESHOOTING TIPS</h3>
+
+            <div class="card">
+                <p><strong>If Comet's analysis seems generic:</strong></p>
+                <ul>
+                    <li>Be more specific: Instead of "analyze this," try "analyze this for first-time buyer appeal"</li>
+                    <li>Give context: "I'm showing this to a family relocating from California with a $800K budget"</li>
+                </ul>
+
+                <p><strong>If you disagree with the AI:</strong></p>
+                <ul>
+                    <li>That's okay! Use it as a thinking partner, not gospel</li>
+                    <li>Ask: "What would be a counterargument to your suggestion?"</li>
+                </ul>
+
+                <p><strong>If it misses something obvious:</strong></p>
+                <ul>
+                    <li>Point it out: "You didn't mention the lack of garage space. How significant is that?"</li>
+                    <li>The AI learns from your feedback within the conversation</li>
+                </ul>
+            </div>
+
+            <div class="notes-section">
+                <h4>YOUR NOTES - Real-Time Page Analysis:</h4>
+                <p><em>Three pages I'll analyze first:</em></p>
+                <p>1. </p>
+                <p>2. </p>
+                <p>3. </p>
+                <p>&nbsp;</p>
+                <p><em>Best prompt I discovered:</em></p>
+                <p>&nbsp;</p>
+                <p><em>How this will change my workflow:</em></p>
+                <p>&nbsp;</p>
+            </div>
+        </section>
+
+        <!-- Use Case 2 -->
+        <section id="use-case-2">
+            <h2>USE CASE #2: LEAD FOLLOW-UP AUTOMATION</h2>
+            <h3>Converting Leads into Clients</h3>
+
+            <div class="card">
+                <h4>WHY THIS MATTERS</h4>
+                <p>80% of sales require 5+ follow-ups, but most agents give up after 2. Comet helps you create personalized, consistent follow-up at scale without sounding robotic.</p>
+            </div>
+
+            <h3>SETTING UP YOUR FOLLOW-UP SYSTEM</h3>
+
+            <h4>Step 1: Create Your Lead Stages Template</h4>
+
+            <p>Open Comet sidebar and create this prompt template:</p>
+
+            <div class="prompt-box">
+                "I need a follow-up email sequence for a [LEAD TYPE] who [SPECIFIC SITUATION]. Tone should be [TONE]. Include 5 touchpoints over 2 weeks."
+            </div>
+
+            <p><strong>Example Lead Types:</strong></p>
+            <ul>
+                <li>Website inquiry who viewed 3+ properties</li>
+                <li>Open house visitor (qualified buyer)</li>
+                <li>Expired listing owner</li>
+                <li>FSBO considering listing</li>
+                <li>Past client (sphere nurture)</li>
+            </ul>
+
+            <h4>Step 2: Generate Your First Sequence</h4>
+
+            <div class="example-box">
+                <p><strong>Sample Prompt:</strong></p>
+                <p>"I need a follow-up email sequence for a first-time buyer who attended my open house yesterday and loved the property but said they need to 'think about it.' They're pre-approved for $450K. Tone should be helpful and consultative, not pushy. Include 5 touchpoints over 2 weeks."</p>
+            </div>
+
+            <p><strong>What You'll Get:</strong></p>
+            <ul>
+                <li>Day 1: Thank you + additional property info</li>
+                <li>Day 3: Similar listings + market update</li>
+                <li>Day 7: Check-in + buyer resources</li>
+                <li>Day 10: Urgency (market movement, new listings)</li>
+                <li>Day 14: Soft close (schedule consultation)</li>
+            </ul>
+
+            <h4>Step 3: Personalize the Output</h4>
+
+            <p>Copy the sequence, then ask:</p>
+            <div class="prompt-box">
+                • "Make email #3 more specific to the South Florida market"<br>
+                • "Add a personal touch referencing our conversation about schools"<br>
+                • "Include a case study of another first-time buyer I helped"
+            </div>
+
+            <h3>LEAD-STAGE-SPECIFIC PROMPTS</h3>
+
+            <div class="card">
+                <p><strong>For New Inquiries (Within 5 Minutes):</strong></p>
+                <div class="prompt-box">
+                    "Write a response to this lead inquiry [paste their message]. Acknowledge their question, provide immediate value, and suggest a brief call. Tone: Professional but warm."
+                </div>
+
+                <p><strong>For Post-Showing Follow-Up:</strong></p>
+                <div class="prompt-box">
+                    "I just showed [ADDRESS] to [CLIENT NAME]. They liked [WHAT THEY LIKED] but concerned about [CONCERN]. Write a follow-up email addressing their concern with data and suggesting next steps."
+                </div>
+
+                <p><strong>For Unresponsive Leads (21+ Days):</strong></p>
+                <div class="prompt-box">
+                    "Create a 're-engagement' email for a lead who went cold after our initial conversation. Reference our past interaction about [TOPIC]. Include a compelling reason to reconnect without being desperate."
+                </div>
+            </div>
+
+            <h3>TIME-SAVING AUTOMATION WORKFLOW</h3>
+
+            <p><strong>Your New Process:</strong></p>
+            <div class="step">After every lead interaction, immediately open Comet</div>
+            <div class="step">Click in the sidebar and say/type: "Draft follow-up for [situation]"</div>
+            <div class="step">Personalize the top 2-3 sentences</div>
+            <div class="step">Copy into your email or CRM</div>
+            <div class="step">Send within 5 minutes of interaction</div>
+
+            <div class="example-box">
+                <p><strong>Pro Tip: Create a "Follow-Up Swipe File"</strong></p>
+                <ul>
+                    <li>Keep your best Comet-generated emails in a Google Doc</li>
+                    <li>Categorize by lead type and stage</li>
+                    <li>Build your personal library over 30 days</li>
+                    <li>Soon you'll have templates for every situation</li>
+                </ul>
+            </div>
+
+            <div class="notes-section">
+                <h4>YOUR NOTES - Lead Follow-Up:</h4>
+                <p><em>Lead types I work with most:</em></p>
+                <p>&nbsp;</p>
+                <p><em>My follow-up gaps Comet will help fix:</em></p>
+                <p>&nbsp;</p>
+                <p><em>Sequence I'll build first:</em></p>
+                <p>&nbsp;</p>
+            </div>
+        </section>
+
+        <!-- Use Case 3 -->
+        <section id="use-case-3">
+            <h2>USE CASE #3: EXPIRED/FSBO CONVERSION</h2>
+            <h3>Mining Gold from Failed Listings</h3>
+
+            <div class="card">
+                <h4>WHY THIS MATTERS</h4>
+                <p>Expired listings and FSBOs are motivated sellers with timing urgency. Comet helps you research their situation and craft compelling, personalized outreach that stands out from generic agent scripts.</p>
+            </div>
+
+            <h3>THE RESEARCH PHASE</h3>
+
+            <h4>Step 1: Find Your Targets</h4>
+            <ul>
+                <li>Navigate to your MLS expired listings from the past 30 days</li>
+                <li>Or search Zillow/FSBO sites for "For Sale by Owner" in your market</li>
+                <li>Open the listing page</li>
+            </ul>
+
+            <h4>Step 2: Deep-Dive Analysis with Comet</h4>
+
+            <p>With the listing visible, ask:</p>
+            <div class="prompt-box">
+                "Analyze why this listing likely expired. Include pricing analysis, marketing assessment, and days on market context for this neighborhood."
+            </div>
+
+            <p><strong>Follow-Up Questions:</strong></p>
+            <div class="prompt-box">
+                • "What should the list price have been based on recent comps?"<br>
+                • "What's missing from the marketing approach?"<br>
+                • "What objections will the seller have about listing again?"<br>
+                • "Research the listing agent - what's their track record in this neighborhood?"
+            </div>
+
+            <h3>CRAFTING YOUR OUTREACH</h3>
+
+            <h4>Step 3: Generate Personalized Contact Letter</h4>
+
+            <div class="prompt-box">
+                <strong>Prompt Template:</strong><br><br>
+                "Write a personalized letter/email to the owner of [ADDRESS] whose listing just expired after [X] days on market at $[PRICE]. The property is a [DESCRIPTION]. I want to position myself as the solution without criticizing their previous agent. Include:<br>
+                - Specific data about why it didn't sell<br>
+                - My unique approach that would be different<br>
+                - Social proof from similar properties I've sold<br>
+                - Low-pressure call to action<br><br>
+                Tone: Empathetic, consultative, confident."
+            </div>
+
+            <p><strong>What Comet Will Generate:</strong></p>
+            <ul>
+                <li>Opening that acknowledges their frustration (empathy)</li>
+                <li>2-3 specific insights about their property/market</li>
+                <li>Your differentiated approach</li>
+                <li>Proof of results in similar situations</li>
+                <li>Soft CTA (free consultation, market analysis)</li>
+            </ul>
+
+            <h4>Step 4: Create Multiple Touchpoints</h4>
+
+            <p>Once you have your initial outreach, ask:</p>
+            <div class="prompt-box">
+                • "Create a follow-up voicemail script for this same seller"<br>
+                • "Write a text message version (under 160 characters)"<br>
+                • "Draft a hand-written note version for a greeting card"<br>
+                • "Create a video script (60 seconds) for this seller"
+            </div>
+
+            <h3>FSBO-SPECIFIC APPROACH</h3>
+
+            <h4>Step 1: Research the FSBO Listing</h4>
+
+            <p>Navigate to their Zillow/FSBO listing and ask:</p>
+            <div class="prompt-box">
+                "Analyze this for-sale-by-owner listing. What mistakes are they making? What will frustrate them most about the FSBO process?"
+            </div>
+
+            <h4>Step 2: Create Educational Outreach</h4>
+
+            <div class="prompt-box">
+                <strong>Prompt:</strong><br><br>
+                "Write an educational email to this FSBO seller offering genuine help with [SPECIFIC ISSUE COMET IDENTIFIED]. Position me as a resource, not as someone trying to steal their listing. Include:<br>
+                - One immediate tip they can implement<br>
+                - One warning about a common FSBO mistake<br>
+                - Offer of a free resource (pricing analysis, contract review, etc.)<br>
+                - No pressure to list with me<br><br>
+                Tone: Helpful educator, not salesperson."
+            </div>
+
+            <h3>THE FOLLOW-UP SEQUENCE</h3>
+
+            <div class="card">
+                <p><strong>Week 1: The Educational Approach</strong></p>
+                <ul>
+                    <li>Email 1: "I noticed your home at [ADDRESS]" + one insight</li>
+                    <li>Day 3: Mail a comparative market analysis (CMA)</li>
+                    <li>Day 5: Text or voicemail with additional tip</li>
+                </ul>
+
+                <p><strong>Week 2: The Value Demonstration</strong></p>
+                <ul>
+                    <li>Email 2: Case study of similar property you sold vs. their approach</li>
+                    <li>Day 10: "How it's going?" check-in (genuine curiosity)</li>
+                </ul>
+
+                <p><strong>Week 3: The Soft Close</strong></p>
+                <ul>
+                    <li>Email 3: Market update showing time cost of staying on market</li>
+                    <li>Final offer: "Free listing presentation - no obligation"</li>
+                </ul>
+            </div>
+
+            <div class="prompt-box">
+                <strong>Generate Entire Sequence:</strong><br>
+                "Create a 3-week follow-up sequence for [EXPIRED or FSBO] at [ADDRESS] using the educational, non-pushy approach we discussed. Include email, voicemail, text, and direct mail components."
+            </div>
+
+            <h3>OBJECTION HANDLING FOR EXPIRED/FSBO</h3>
+
+            <p><strong>Common Objections & Comet Solutions:</strong></p>
+
+            <div class="card">
+                <p><strong>Objection: "I'm going to wait for the market to improve"</strong></p>
+                <div class="prompt-box">
+                    "Create a data-driven response showing the cost of waiting in the current [YOUR MARKET] market. Include interest rate impact, seasonal trends, and opportunity cost. Make it specific to a $[PRICE] property."
+                </div>
+
+                <p><strong>Objection: "The last agent didn't do anything"</strong></p>
+                <div class="prompt-box">
+                    "Write a response that empathizes with their experience while differentiating my marketing approach. Include specific tactics: [LIST YOUR UNIQUE STRATEGIES]. Avoid criticizing the previous agent."
+                </div>
+
+                <p><strong>Objection: "Your commission is too high"</strong></p>
+                <div class="prompt-box">
+                    "Create a value-based response to commission objection for a $[PRICE] property. Break down what they get for the commission, include ROI data, and position net proceeds as the important metric, not commission rate."
+                </div>
+
+                <p><strong>Objection: "I can sell it myself and save money"</strong></p>
+                <div class="prompt-box">
+                    "Write an educational response about the true cost of FSBO, including: time investment, legal liability, pricing accuracy, negotiation mistakes, and average FSBO vs. agent-sold price difference. Use National Association of Realtors data. Tone: Helpful, not condescending."
+                </div>
+            </div>
+
+            <h3>BUILDING YOUR EXPIRED/FSBO SYSTEM</h3>
+
+            <div class="card">
+                <p><strong>Daily Routine (15 minutes):</strong></p>
+                <ol>
+                    <li>Check MLS for new expireds</li>
+                    <li>Use Comet to analyze top 3 prospects</li>
+                    <li>Generate personalized outreach for each</li>
+                    <li>Send within 24 hours of expiration</li>
+                </ol>
+
+                <p><strong>Weekly Batch Work (30 minutes):</strong></p>
+                <ol>
+                    <li>Review FSBO listings on Zillow/Craigslist</li>
+                    <li>Create educational content pieces (tips, guides)</li>
+                    <li>Build follow-up sequences for all active prospects</li>
+                    <li>Track which messages get responses (optimize over time)</li>
+                </ol>
+
+                <p><strong>Success Metrics to Track:</strong></p>
+                <ul>
+                    <li>Response rate to first contact: _____%</li>
+                    <li>Appointments set: _____</li>
+                    <li>Listings secured: _____</li>
+                    <li>Average days from first contact to listing: _____</li>
+                </ul>
+            </div>
+
+            <h3>ADVANCED TIP: THE "INSIDER REPORT"</h3>
+
+            <p>Create a monthly "Expired Listing Report" using Comet:</p>
+
+            <div class="prompt-box">
+                "Analyze all expired listings in [NEIGHBORHOOD/ZIP] over the past 90 days. Create a report showing:<br>
+                - Common reasons for failure<br>
+                - Average days on market<br>
+                - Pricing patterns<br>
+                - Seasonal trends<br>
+                - Success rate of re-listings<br>
+                Format as a professional market report I can send to expired listing owners."
+            </div>
+
+            <p><strong>Use This Report:</strong></p>
+            <ul>
+                <li>As a leave-behind at door knocking</li>
+                <li>As email attachment in outreach</li>
+                <li>As credibility builder in listing presentations</li>
+                <li>Updated quarterly to show expertise</li>
+            </ul>
+
+            <div class="notes-section">
+                <h4>YOUR NOTES - Expired/FSBO Strategy:</h4>
+                <p><em>Expired listings I'm targeting this month:</em></p>
+                <p>&nbsp;</p>
+                <p><em>FSBOs in my market right now:</em></p>
+                <p>&nbsp;</p>
+                <p><em>My differentiation points to emphasize:</em></p>
+                <p>&nbsp;</p>
+                <p><em>Best outreach message Comet generated:</em></p>
+                <p>&nbsp;</p>
+            </div>
+        </section>
+
+        <!-- Use Case 4 -->
+        <section id="use-case-4">
+            <h2>USE CASE #4: COMPETITIVE LISTING ANALYSIS</h2>
+            <h3>Winning More Listing Presentations</h3>
+
+            <div class="card">
+                <h4>WHY THIS MATTERS</h4>
+                <p>Sellers choose agents who demonstrate market expertise and strategic thinking. A data-driven competitive analysis positions you as the market authority and wins listings.</p>
+            </div>
+
+            <h3>PRE-LISTING PRESENTATION PREPARATION</h3>
+
+            <h4>Step 1: Identify the Competition (10 minutes)</h4>
+
+            <div class="step">Go to your MLS and search for:
+                <ul>
+                    <li>Active listings in the same neighborhood/subdivision</li>
+                    <li>Pending/sold listings from past 90 days</li>
+                    <li>Similar bed/bath/sqft configuration within 10% price range</li>
+                </ul>
+            </div>
+            <div class="step">Open 5-10 comparable listings in separate tabs</div>
+
+            <h4>Step 2: Batch Analysis with Comet</h4>
+
+            <div class="prompt-box">
+                "I'm preparing a listing presentation for [ADDRESS - PROPERTY DESCRIPTION]. I have [NUMBER] comparable listings open in tabs. Analyze these comps and create a competitive positioning report including:<br>
+                - Price per square foot comparison table<br>
+                - Days on market trends<br>
+                - Key features comparison<br>
+                - Pricing strategy recommendation<br>
+                - Competitive advantages of my listing<br>
+                - Potential challenges<br><br>
+                Format as a professional report I can present to the seller."
+            </div>
+
+            <p><strong>Alternative Approach (Tab-by-Tab):</strong></p>
+            <p>Navigate to each comp and ask:</p>
+            <div class="prompt-box">
+                • "How does this listing's marketing compare to best practices?"<br>
+                • "What is this listing doing well that we should consider?"<br>
+                • "What mistakes is this listing making that we should avoid?"
+            </div>
+
+            <h3>CREATING YOUR PRICING STRATEGY</h3>
+
+            <h4>Step 3: Price Positioning Analysis</h4>
+
+            <div class="prompt-box">
+                "Based on the comp analysis, recommend a pricing strategy for [ADDRESS]. The seller wants $[THEIR EXPECTATION]. Comps range from $[LOW] to $[HIGH]. Provide:<br>
+                - Recommended list price with justification<br>
+                - Strategic pricing tiers (aggressive/moderate/conservative)<br>
+                - Expected days on market for each tier<br>
+                - Anticipated offer range<br>
+                - Price adjustment strategy if needed<br><br>
+                Use local [YOUR MARKET] market data and current trends."
+            </div>
+
+            <h4>Step 4: Create Price Justification Document</h4>
+
+            <div class="prompt-box">
+                "Turn this pricing recommendation into a one-page document I can leave with the seller. Include:<br>
+                - Visual price comparison chart<br>
+                - Detailed justification for recommended price<br>
+                - Market trend context<br>
+                - Risk of overpricing<br>
+                - Opportunity cost calculations<br><br>
+                Make it visually clear and seller-friendly."
+            </div>
+
+            <h3>DIFFERENTIATION STRATEGY</h3>
+
+            <h4>Step 5: Marketing Plan Development</h4>
+
+            <div class="prompt-box">
+                "Create a comprehensive marketing plan for [ADDRESS] that differentiates from the [NUMBER] competing listings currently active. My unique strategies include: [LIST YOUR SPECIAL MARKETING TACTICS]. Format as a presentation-ready document showing:<br>
+                - Professional photography/video plan<br>
+                - Digital marketing strategy (social, email, website)<br>
+                - Traditional marketing (signs, flyers, open houses)<br>
+                - Agent network outreach<br>
+                - Timeline and milestones<br>
+                - Competitive advantages"
+            </div>
+
+            <h3>THE PRESENTATION BUILDER</h3>
+
+            <h4>Step 6: Generate Your Listing Presentation Script</h4>
+
+            <div class="prompt-box">
+                <strong>Master Prompt:</strong><br><br>
+                "Create a 15-minute listing presentation script for [ADDRESS]. Include:<br>
+                - Opening (rapport building, agenda setting)<br>
+                - Market analysis presentation (using the comp data we analyzed)<br>
+                - Pricing strategy explanation<br>
+                - Marketing plan overview<br>
+                - My track record and testimonials section<br>
+                - Objection handling (commission, contract length, dual agency)<br>
+                - Closing (asking for the listing)<br><br>
+                Tone: Confident, consultative, data-driven. Include transition phrases and suggested visual aids."
+            </div>
+
+            <p><strong>Comet Will Generate:</strong></p>
+            <ul>
+                <li>Word-for-word script with timing cues</li>
+                <li>Suggested slides/visual aids for each section</li>
+                <li>Transition language between topics</li>
+                <li>Questions to ask the seller</li>
+                <li>Closing techniques</li>
+            </ul>
+
+            <div class="notes-section">
+                <h4>YOUR NOTES - Listing Presentations:</h4>
+                <p><em>Upcoming listing appointments:</em></p>
+                <p>&nbsp;</p>
+                <p><em>Competitive advantages I need to emphasize:</em></p>
+                <p>&nbsp;</p>
+                <p><em>Objections I typically face:</em></p>
+                <p>&nbsp;</p>
+                <p><em>Pricing conversations I struggle with:</em></p>
+                <p>&nbsp;</p>
+            </div>
+        </section>
+
+        <!-- Use Case 5 -->
+        <section id="use-case-5">
+            <h2>USE CASE #5: OBJECTION RESPONSE LIBRARY</h2>
+            <h3>Saving Dying Deals</h3>
+
+            <div class="card">
+                <h4>WHY THIS MATTERS</h4>
+                <p>The difference between top producers and average agents is objection handling. Every "no" is an opportunity if you have the right response. Comet helps you prepare for and respond to objections in real-time.</p>
+            </div>
+
+            <h3>BUILDING YOUR OBJECTION LIBRARY</h3>
+
+            <h4>Step 1: Identify Your Top 10 Objections</h4>
+
+            <p><strong>Common Real Estate Objections:</strong></p>
+            <ul>
+                <li>"The price is too high"</li>
+                <li>"I need to think about it"</li>
+                <li>"I want to see more properties first"</li>
+                <li>"We're going to keep renting"</li>
+                <li>"The inspection report scared us"</li>
+                <li>"We need to sell our current home first"</li>
+                <li>"Your commission is too high"</li>
+                <li>"We want to wait for rates to drop"</li>
+                <li>"The neighborhood isn't perfect"</li>
+                <li>"We found something we like better"</li>
+            </ul>
+
+            <h4>Step 2: Generate Response Framework</h4>
+
+            <p><strong>For Each Objection, Use This Prompt:</strong></p>
+
+            <div class="prompt-box">
+                "Create a professional response to the objection: '[SPECIFIC OBJECTION]' in a real estate context. Include:<br>
+                - Empathy statement (acknowledge their concern)<br>
+                - Reframe (change perspective)<br>
+                - Data/evidence (facts that address the concern)<br>
+                - Alternative solution (if applicable)<br>
+                - Trial close (move conversation forward)<br><br>
+                Situation: [DESCRIBE SPECIFIC SCENARIO - buyer/seller, price point, property type, market conditions]<br><br>
+                Tone: Understanding but confident, consultative not defensive."
+            </div>
+
+            <h3>EXAMPLE: "THE PRICE IS TOO HIGH" OBJECTION</h3>
+
+            <div class="example-box">
+                <p><strong>Prompt:</strong></p>
+                <p>"Create a response to a buyer saying 'The price is too high' for a $650K home in [YOUR MARKET]. Recent comps support the price. They love the property but feel it should be $600K. Include data, reframing, and path forward."</p>
+
+                <p><strong>What You'll Get:</strong></p>
+                <ul>
+                    <li>Empathy: "I understand this is a significant investment..."</li>
+                    <li>Reframe: "Let's look at value vs. price..."</li>
+                    <li>Data: "Here's what comparable homes actually sold for..."</li>
+                    <li>Solution: "What if we structured an offer with..."</li>
+                    <li>Close: "Would you be comfortable at $X with these terms?"</li>
+                </ul>
+            </div>
+
+            <p><strong>Then Customize:</strong></p>
+            <div class="prompt-box">
+                • "Make this response more specific to luxury buyers"<br>
+                • "Add a story about another client who had the same concern"<br>
+                • "Include current market urgency factors"
+            </div>
+
+            <h3>REAL-TIME OBJECTION HANDLING</h3>
+
+            <p><strong>During Calls/Appointments:</strong></p>
+
+            <div class="card">
+                <p><strong>Scenario:</strong> Client hits you with unexpected objection during showing</p>
+
+                <p><strong>Quick Response Protocol:</strong></p>
+                <div class="step">Say: "That's a great point. Let me pull some data on that."</div>
+                <div class="step">Open Comet sidebar (on phone or tablet)</div>
+                <div class="step">Type: "Quick response to: [OBJECTION] - [CONTEXT]"</div>
+                <div class="step">Read AI-generated talking points</div>
+                <div class="step">Deliver confident, data-backed response</div>
+            </div>
+
+            <div class="example-box">
+                <strong>Practice This:</strong> Keep Comet open on your phone during showings. Get comfortable quickly asking for objection responses. It becomes your real-time coach.
+            </div>
+
+            <h3>SITUATION-SPECIFIC OBJECTION RESPONSES</h3>
+
+            <h4>Post-Inspection Objection Handling:</h4>
+            <div class="prompt-box">
+                "Buyer received inspection report showing [LIST MAJOR ITEMS]. They want to back out or ask for $[AMOUNT] in repairs. Property is priced fairly at $[PRICE]. Create a negotiation strategy including:<br>
+                - Which repairs are reasonable to request<br>
+                - How to frame the response to seller<br>
+                - Creative solutions (credit, price reduction, seller repairs)<br>
+                - Comparable inspection reports from similar homes<br>
+                - Path to keeping deal together"
+            </div>
+
+            <h4>Appraisal Gap Objection:</h4>
+            <div class="prompt-box">
+                "Property appraised at $[APPRAISAL] but contract price is $[CONTRACT PRICE]. Buyer is frustrated, seller refuses to reduce. Create talking points for both parties including:<br>
+                - Appraisal appeal strategy<br>
+                - Alternative financing options<br>
+                - Creative deal structures<br>
+                - Market data supporting contract price<br>
+                - Risk/reward analysis for each party"
+            </div>
+
+            <h4>Multiple Offer Objection (Buyer):</h4>
+            <div class="prompt-box">
+                "My buyer is in a multiple offer situation for a property listed at $[PRICE]. They're frustrated and considering walking away. Create a strategy including:<br>
+                - How to craft a competitive offer without overpaying<br>
+                - Non-price terms that could win<br>
+                - Escalation clause guidance<br>
+                - Backup offer strategy<br>
+                - When to walk away"
+            </div>
+
+            <h4>Cold Feet Before Closing:</h4>
+            <div class="prompt-box">
+                "Buyer is getting cold feet 3 days before closing on a $[PRICE] home. They're worried about: [LIST CONCERNS]. Create a reassurance script including:<br>
+                - Normal pre-closing anxiety validation<br>
+                - Logic and data addressing each concern<br>
+                - Long-term perspective<br>
+                - Financial analysis confirming smart decision<br>
+                - Action plan for moving forward confidently"
+            </div>
+
+            <div class="notes-section">
+                <h4>YOUR NOTES - Objection Library:</h4>
+                <p><em>Top 3 objections I face:</em></p>
+                <p>1. </p>
+                <p>2. </p>
+                <p>3. </p>
+                <p>&nbsp;</p>
+                <p><em>Objections I struggle with most:</em></p>
+                <p>&nbsp;</p>
+                <p><em>Best response Comet generated:</em></p>
+                <p>&nbsp;</p>
+                <p><em>Deal I'm working on that needs objection help:</em></p>
+                <p>&nbsp;</p>
+            </div>
+        </section>
+
+        <!-- Bonus Tips -->
+        <section id="bonus">
+            <h2>BONUS TIPS & BEST PRACTICES</h2>
+
+            <h3>PROMPT ENGINEERING FOR REAL ESTATE</h3>
+
+            <div class="card">
+                <p><strong>The Formula for Great Prompts:</strong></p>
+                <p>[ROLE] + [TASK] + [CONTEXT] + [FORMAT] + [TONE]</p>
+
+                <div class="example-box">
+                    <p><strong>Example:</strong></p>
+                    <p>"As an experienced luxury real estate agent [ROLE], create a listing description [TASK] for a $2M waterfront property in Miami [CONTEXT] formatted as 3 paragraphs with bullet points [FORMAT] using elegant, aspirational language [TONE]."</p>
+                </div>
+
+                <p><strong>Generic Prompt:</strong> "Write a listing description"</p>
+                <p><strong>Better Prompt:</strong> "Write a compelling listing description for a 4bed/3bath single-family home in [NEIGHBORHOOD], priced at $[PRICE], emphasizing the renovated kitchen and large backyard, targeting young families, 150 words max."</p>
+            </div>
+
+            <h3>WORKSPACE ORGANIZATION</h3>
+
+            <p><strong>Create Dedicated Workspaces:</strong></p>
+            <ul>
+                <li><strong>Listings Workspace:</strong> All your active listings, MLS, marketing tools</li>
+                <li><strong>Buyer Clients:</strong> Saved searches, mortgage calculators, listings</li>
+                <li><strong>Lead Generation:</strong> Social media, FSBO sites, expired listings</li>
+                <li><strong>Education:</strong> Training resources, market reports, coaching</li>
+            </ul>
+
+            <div class="card">
+                <p><strong>How to Create Workspaces:</strong></p>
+                <div class="step">Click "+" next to your current workspace name (top left)</div>
+                <div class="step">Name it (e.g., "Active Listings Q4 2025")</div>
+                <div class="step">Open relevant tabs</div>
+                <div class="step">Comet saves this workspace for quick switching</div>
+            </div>
+
+            <h3>DAILY COMET HABITS</h3>
+
+            <div class="card">
+                <p><strong>Morning Routine (10 minutes):</strong></p>
+                <ul>
+                    <li>Open "Today's Priority" workspace</li>
+                    <li>Ask Comet: "Summarize my calendar and suggest preparation for each appointment"</li>
+                    <li>Generate follow-up messages for yesterday's interactions</li>
+                    <li>Check for new leads and create response templates</li>
+                </ul>
+
+                <p><strong>Throughout the Day:</strong></p>
+                <ul>
+                    <li>Before every appointment: "Brief me on [CLIENT/PROPERTY]"</li>
+                    <li>After every showing: "Generate follow-up for [CLIENT]"</li>
+                    <li>When objection arises: Quick objection response check</li>
+                </ul>
+
+                <p><strong>Evening Routine (10 minutes):</strong></p>
+                <ul>
+                    <li>Ask Comet: "Review today's activities and suggest tomorrow's priorities"</li>
+                    <li>Generate any needed follow-ups</li>
+                    <li>Prep tomorrow's listing descriptions or marketing content</li>
+                </ul>
+            </div>
+
+            <h3>KEYBOARD SHORTCUTS (Time Savers)</h3>
+
+            <ul>
+                <li><strong>Ctrl+Shift+P (Windows) / Cmd+Shift+P (Mac):</strong> Open AI sidebar quickly</li>
+                <li><strong>Ctrl+T / Cmd+T:</strong> New tab</li>
+                <li><strong>Ctrl+W / Cmd+W:</strong> Close current tab</li>
+                <li><strong>Ctrl+Shift+T / Cmd+Shift+T:</strong> Reopen closed tab</li>
+                <li><strong>Ctrl+L / Cmd+L:</strong> Jump to address bar</li>
+            </ul>
+
+            <h3>INTEGRATION WITH YOUR EXISTING TOOLS</h3>
+
+            <div class="card">
+                <p><strong>CRM Integration Workflow:</strong></p>
+                <ol>
+                    <li>Generate content in Comet (emails, notes, tasks)</li>
+                    <li>Copy directly into your CRM (Follow Up Boss, LionDesk, kvCORE, etc.)</li>
+                    <li>Set reminders based on Comet's recommendations</li>
+                </ol>
+
+                <p><strong>Email Integration:</strong></p>
+                <ul>
+                    <li>Open Gmail/Outlook in Comet</li>
+                    <li>Use sidebar to draft/review emails without leaving browser</li>
+                    <li>Generate templates and save to your email platform</li>
+                </ul>
+
+                <p><strong>Social Media Workflow:</strong></p>
+                <ul>
+                    <li>Schedule posts in Buffer/Hootsuite</li>
+                    <li>Use Comet to generate variations</li>
+                    <li>Copy the best-performing format</li>
+                </ul>
+            </div>
+
+            <h3>ADVANCED FEATURES TO EXPLORE</h3>
+
+            <p><strong>Chrome Extension Support:</strong></p>
+            <p>Install these essential real estate extensions:</p>
+            <ul>
+                <li>Zillow/Realtor.com enhancers</li>
+                <li>Screenshot tools (for presentations)</li>
+                <li>Video recording (for walkthroughs)</li>
+                <li>Grammar checkers (Grammarly works in Comet)</li>
+            </ul>
+
+            <div class="example-box">
+                <p><strong>Voice Commands:</strong></p>
+                <p>If you have a microphone, you can dictate prompts to Comet's sidebar instead of typing—huge time saver during showings or while driving.</p>
+            </div>
+
+            <h3>MEASURING YOUR SUCCESS</h3>
+
+            <div class="card">
+                <p><strong>Track These Metrics:</strong></p>
+                <ul>
+                    <li>Response time to leads (goal: under 5 minutes)</li>
+                    <li>Number of follow-up touches per lead</li>
+                    <li>Listing presentation win rate</li>
+                    <li>Time spent on administrative tasks</li>
+                    <li>Deals saved through objection handling</li>
+                </ul>
+
+                <p><strong>Weekly Review Questions:</strong></p>
+                <ol>
+                    <li>How many hours did Comet save me this week?</li>
+                    <li>What's one new way I used Comet?</li>
+                    <li>Which use case had the biggest impact?</li>
+                    <li>What prompt/workflow should I refine?</li>
+                </ol>
+            </div>
+
+            <div class="notes-section">
+                <h4>YOUR NOTES - Implementation Plan:</h4>
+                <p><em>Which use case will I implement first?</em></p>
+                <p>&nbsp;</p>
+                <p><em>When will I start using Comet daily?</em></p>
+                <p>&nbsp;</p>
+                <p><em>Success metrics I'll track:</em></p>
+                <p>&nbsp;</p>
+                <p><em>Questions for the mastermind group:</em></p>
+                <p>&nbsp;</p>
+            </div>
+        </section>
+
+        <!-- Security -->
+        <section id="security">
+            <h2>SECURITY DISCLAIMER & BEST PRACTICES</h2>
+
+            <div class="warning-card card">
+                <h3>IMPORTANT: READ BEFORE USING COMET WITH CLIENT DATA</h3>
+            </div>
+
+            <h3>CURRENT SECURITY CONCERNS</h3>
+
+            <p>As of October 2025, independent security researchers have identified vulnerabilities in Perplexity's Comet browser that users should be aware of:</p>
+
+            <div class="card warning-card">
+                <p><strong>Identified Vulnerabilities:</strong></p>
+                <ol>
+                    <li><strong>"CometJacking" Vulnerability:</strong> A critical zero-click vulnerability that could allow attackers to steal sensitive data including emails, calendar appointments, and credentials through malicious links.</li>
+                    <li><strong>Indirect Prompt Injection:</strong> When asking Comet to summarize webpages, malicious content embedded in pages could potentially trick the AI into accessing information from other tabs or performing unintended actions.</li>
+                    <li><strong>Data Access Concerns:</strong> Because Comet's AI can access authorized services (Gmail, Calendar, etc.), compromised AI instructions could theoretically access this data without additional authentication.</li>
+                </ol>
+            </div>
+
+            <h3>RECOMMENDED SECURITY PRACTICES</h3>
+
+            <p><strong>Until Perplexity Addresses These Issues:</strong></p>
+
+            <div class="card success-card">
+                <p><strong>DO:</strong></p>
+                <ul class="do-list">
+                    <li>Use Comet for generating content, research, and analysis of public information</li>
+                    <li>Use it for drafting emails (then copy to your secure email client)</li>
+                    <li>Leverage it for market research, listing descriptions, and marketing content</li>
+                    <li>Practice the strategies in this workbook with non-sensitive data</li>
+                    <li>Keep Comet updated to the latest version (security patches)</li>
+                </ul>
+            </div>
+
+            <div class="card warning-card">
+                <p><strong>DO NOT:</strong></p>
+                <ul class="dont-list">
+                    <li>Store sensitive client financial information in Comet's history</li>
+                    <li>Input social security numbers, loan details, or confidential documents</li>
+                    <li>Authorize Comet to access your Gmail if it contains sensitive client communications</li>
+                    <li>Use it to access or store closing documents, purchase agreements, or legal contracts</li>
+                    <li>Click unknown links while using Comet's AI features</li>
+                </ul>
+            </div>
+
+            <h3>BEST PRACTICES FOR REAL ESTATE PROFESSIONALS</h3>
+
+            <div class="card">
+                <p><strong>1. Separate Browsers for Different Tasks:</strong></p>
+                <ul>
+                    <li><strong>Use Comet for:</strong> Content creation, market research, lead generation</li>
+                    <li><strong>Use secure browser (Chrome/Safari/Edge) for:</strong> CRM with client data, MLS backend, financial documents, e-signatures</li>
+                </ul>
+
+                <p><strong>2. Data Minimization:</strong></p>
+                <ul>
+                    <li>Only share information with Comet that you'd be comfortable posting publicly</li>
+                    <li>Assume anything entered into Comet could potentially be accessed</li>
+                    <li>Remove client identifying information before analysis (use "Client A" instead of names)</li>
+                </ul>
+
+                <p><strong>3. Regular Security Checks:</strong></p>
+                <ul>
+                    <li>Monitor Perplexity's security updates: www.perplexity.ai/security</li>
+                    <li>Review browser permissions regularly</li>
+                    <li>Log out of sensitive accounts when using Comet AI features</li>
+                </ul>
+
+                <p><strong>4. Client Consent:</strong></p>
+                <ul>
+                    <li>Do not input client personal information into AI tools without disclosure</li>
+                    <li>Follow NAR guidelines on data privacy and technology use</li>
+                    <li>When in doubt, err on the side of client privacy</li>
+                </ul>
+            </div>
+
+            <h3>ALTERNATIVE SECURE WORKFLOWS</h3>
+
+            <div class="example-box">
+                <p><strong>For Sensitive Tasks:</strong></p>
+                <ol>
+                    <li>Generate templates/frameworks in Comet (without client details)</li>
+                    <li>Export to your secure environment</li>
+                    <li>Add client-specific information in your secure CRM/email</li>
+                </ol>
+
+                <p><strong>Example:</strong></p>
+                <ul>
+                    <li>❌ "Draft an email to John Smith about his offer on 123 Main St"</li>
+                    <li>✅ "Draft a template for a buyer about an accepted offer" → Then personalize in Gmail</li>
+                </ul>
+            </div>
+
+            <h3>COMPLIANCE CONSIDERATIONS</h3>
+
+            <div class="card">
+                <p><strong>Real Estate Compliance:</strong></p>
+                <ul>
+                    <li><strong>Fair Housing:</strong> Review all AI-generated content for discriminatory language</li>
+                    <li><strong>Privacy Laws:</strong> Comply with state-specific privacy regulations</li>
+                    <li><strong>NAR Code of Ethics:</strong> Maintain client confidentiality per Standard of Practice 1-9</li>
+                    <li><strong>Data Protection:</strong> Follow your brokerage's technology and data policies</li>
+                </ul>
+
+                <p><strong>Questions to Ask Your Broker:</strong></p>
+                <ul>
+                    <li>Does our E&O insurance cover AI tool usage?</li>
+                    <li>What's our brokerage policy on AI-generated content?</li>
+                    <li>Are there specific tools we're prohibited from using?</li>
+                </ul>
+            </div>
+
+            <h3>ONGOING MONITORING</h3>
+
+            <p>This workbook will be updated as:</p>
+            <ul>
+                <li>Perplexity releases security patches</li>
+                <li>Best practices evolve</li>
+                <li>Industry guidelines develop</li>
+            </ul>
+
+            <p><strong>Stay Informed:</strong></p>
+            <ul>
+                <li>Join our mastermind discussions on safe AI usage</li>
+                <li>Subscribe to Perplexity security updates</li>
+                <li>Follow NAR technology guidance</li>
+                <li>Network with other tech-forward agents on compliance</li>
+            </ul>
+
+            <h3>THE BOTTOM LINE</h3>
+
+            <div class="card">
+                <p><strong>Comet is a powerful productivity tool when used responsibly.</strong> The strategies in this workbook can significantly improve your efficiency and results—but never at the expense of client trust or data security.</p>
+
+                <p><strong>When in doubt, ask yourself:</strong></p>
+                <p style="text-align: center; font-size: 1.2em; font-weight: bold; color: var(--primary-blue);">"Would I be comfortable if this information was publicly accessible?"</p>
+
+                <p>If the answer is no, use traditional secure tools for that task.</p>
+            </div>
+
+            <div class="signature-box">
+                <h4>YOUR COMMITMENT:</h4>
+                <p>I, <span class="signature-line" contenteditable="true" style="display: inline-block; min-width: 300px; border-bottom: 2px solid var(--dark-gray);"></span>, have read and understand the security considerations outlined in this workbook. I commit to using Comet responsibly and protecting my clients' sensitive information.</p>
+                <p>&nbsp;</p>
+                <p>Signature: <span class="signature-line" contenteditable="true" style="display: inline-block; min-width: 300px; border-bottom: 2px solid var(--dark-gray);"></span> &nbsp;&nbsp;&nbsp; Date: <span class="signature-line" contenteditable="true" style="display: inline-block; min-width: 200px; border-bottom: 2px solid var(--dark-gray);"></span></p>
+            </div>
+
+            <h3>QUESTIONS OR CONCERNS?</h3>
+
+            <div class="card">
+                <p><strong>Contact:</strong></p>
+                <ul>
+                    <li><strong>Edmund Bogen</strong> - Mastermind Leader</li>
+                    <li><strong>Email:</strong> [Your Contact Email]</li>
+                    <li><strong>Mastermind Group:</strong> [Meeting Schedule/Platform]</li>
+                </ul>
+
+                <p><strong>Additional Resources:</strong></p>
+                <ul>
+                    <li>Perplexity Support: support@perplexity.ai</li>
+                    <li>NAR Technology Guidelines: www.nar.realtor/technology</li>
+                    <li>State Real Estate Commission: [Your State Link]</li>
+                </ul>
+            </div>
+
+            <div class="card success-card">
+                <h2>CONGRATULATIONS!</h2>
+
+                <p>You now have a comprehensive system for leveraging AI to build your real estate business. Remember:</p>
+
+                <p><strong>Implementation beats perfection.</strong> Start with ONE use case this week. Master it. Then add another.</p>
+
+                <p style="text-align: center; font-size: 1.5em; margin-top: 2rem;"><strong>See you at the mastermind!</strong></p>
+            </div>
+
+            <p style="text-align: center; color: var(--medium-gray); margin-top: 3rem;">
+                <strong>END OF WORKBOOK</strong><br>
+                <em>Version 1.0 - October 2025</em><br>
+                <em>For updates and additional resources, visit the mastermind group.</em>
+            </p>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Edmund Bogen - Comet Browser Mastery Workbook</p>
+        <p>For Real Estate Professionals</p>
+    </footer>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-top" id="scrollTop" onclick="scrollToTop()">↑</button>
+
+    <script>
+        // Mobile menu toggle
+        function toggleMenu() {
+            const menu = document.getElementById('navMenu');
+            menu.classList.toggle('active');
+        }
+
+        // Scroll to top functionality
+        window.onscroll = function() {
+            const scrollButton = document.getElementById('scrollTop');
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                scrollButton.classList.add('visible');
+            } else {
+                scrollButton.classList.remove('visible');
+            }
+        };
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('navMenu').classList.remove('active');
+            });
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // ============ AUTHENTICATION ============
+
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://xripbgtxettewbsiyhkz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyaXBiZ3R4ZXR0ZXdic2l5aGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODY4MjcsImV4cCI6MjA3NTI2MjgyN30.8HjmETq6PeM1pEdcAnT7nFBEeIUyCDW_kZH5GAHgrWA';
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Check authentication on page load
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+
+            if (!session) {
+                // Not logged in - redirect to login
+                window.location.href = 'login.html';
+            } else {
+                // Logged in - show content
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('content').classList.add('show');
+
+                // Display user info
+                const user = session.user;
+                const userInfoDiv = document.getElementById('userInfo');
+                const userName = user.user_metadata?.full_name || user.email;
+
+                userInfoDiv.innerHTML = `
+                    <span>Welcome, ${userName}</span>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                `;
+            }
+        }
+
+        // Logout function
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
+        // Run auth check
+        checkAuth();
+    </script>
+    </div>
+</body>
+</html>
